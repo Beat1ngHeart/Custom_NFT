@@ -1,0 +1,117 @@
+/* 钱包弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+  border: 1px solid #333;
+}
+
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.25s;
+}
+
+.close-button:hover {
+  background-color: #333;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.wallet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.wallet-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.wallet-input {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #646cff;
+  border-radius: 8px;
+  background-color: #242424;
+  color: white;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.wallet-input:focus {
+  outline: none;
+  border-color: #535bf2;
+}
+
+.wallet-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.bind-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.25s;
+}
+
+.bind-button:hover {
+  background-color: #45a049;
+}
+
+.cancel-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #666;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.25s;
+}
+
+.cancel-button:hover {
+  background-color: #555;
+}
