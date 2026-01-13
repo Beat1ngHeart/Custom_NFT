@@ -10,7 +10,17 @@ interface Product {
 }
 
 function ProductList() {
+  //声明一个状态变量.products，类型是Product数组
+  //初始值是空数组[]
+  //setProducts是用于更新products状态的函数
+  //useState是React提供的钩子函数，用于声明状态变量和更新函数
+  //<Product[]>是状态变量的类型，表示products是一个Product数组
+  //[]是初始值，表示products初始值为空数组
   const [products, setProducts] = useState<Product[]>([])
+  //使用实例：
+  //products = []
+  //setProducts([...])
+  //products = [{id:1,...}]
 
   // 从 localStorage 读取商品数据
   useEffect(() => {
@@ -48,7 +58,24 @@ function ProductList() {
   // 购买商品
   const handlePurchase = (product: Product) => {
     if (window.confirm(`确认购买此商品？价格：¥${product.price.toFixed(2)}`)) {
-      alert('购买成功！')
+      // 从localStorage中删除已购买商品
+      // 直接从 localStorage 读取最新数据，避免闭包问题
+      const savedProducts = localStorage.getItem('products')
+      if (savedProducts) {
+        const currentProducts: Product[] = JSON.parse(savedProducts)
+        const updatedProducts = currentProducts.filter(p => p.id !== product.id)
+        
+        // 更新 localStorage
+        localStorage.setItem('products', JSON.stringify(updatedProducts))
+        
+        // 更新状态
+        setProducts(updatedProducts)
+        
+        // 触发自定义事件，通知其他组件更新
+        window.dispatchEvent(new Event('productsUpdated'))
+        
+        alert('购买成功！')
+      }
     }
   }
 

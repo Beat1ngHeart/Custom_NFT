@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+//{ Link } 解构导入，只导入Link组件
+//Link是React Router提供的导航组件，用于在应用内跳转，不会刷新页面
 import Wallet from '../components/wallet'
 import './HomePage.css'
 
@@ -26,4 +28,5 @@ function HomePage() {
 }
 
 export default HomePage
+
 
