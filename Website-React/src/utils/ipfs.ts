@@ -63,13 +63,6 @@ export async function uploadToWeb3Storage(file: File, apiToken?: string): Promis
   )
 }
 
-/**
- * 方法2: 使用 Pinata 上传到 IPFS
- * 需要 API Key: https://www.pinata.cloud/
- * 支持两种认证方式：
- * 1. JWT Token（推荐，更安全）- 使用 pinataJWT
- * 2. API Key + Secret（传统方式）- 使用 pinataKey + pinataSecret
- */
 export async function uploadToPinata(
   file: File,
   options: {
