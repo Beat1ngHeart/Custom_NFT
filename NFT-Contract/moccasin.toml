@@ -29,7 +29,7 @@ is_zksync = true
 prompt_live = true
 
 [networks.NFTtest]
-url = "https://rpc.buildbear.io/outer-bedlam-ade13364"
+url = "https://virtual.sepolia.eu.rpc.tenderly.co/4fb5e0c9-c961-48ae-ba4f-ef058cdc5450"
 prompt_live = false
 default_account_name = "NFTtest"
 

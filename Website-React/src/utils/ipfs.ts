@@ -232,6 +232,89 @@ export function getIPFSImageUrl(cid: string, gateway: string = 'ipfs.io'): strin
 }
 
 /**
+ * 上传 JSON 数据到 Pinata
+ * @param jsonData JSON 对象
+ * @param options Pinata 认证选项
+ * @returns IPFS CID 和 URL
+ */
+export async function uploadJSONToPinata(
+  jsonData: object,
+  options: {
+    pinataJWT?: string
+    pinataKey?: string
+    pinataSecret?: string
+  }
+): Promise<IPFSUploadResult> {
+  console.log('📤 开始上传 JSON 到 Pinata...')
+  console.log('JSON 数据:', JSON.stringify(jsonData, null, 2))
+  
+  // 将 JSON 对象转换为 Blob
+  const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], {
+    type: 'application/json'
+  })
+  
+  // 创建 File 对象（Pinata 需要 File 对象）
+  const jsonFile = new File([jsonBlob], 'metadata.json', {
+    type: 'application/json'
+  })
+
+  console.log('文件大小:', jsonFile.size, 'bytes')
+
+  const formData = new FormData()
+  formData.append('file', jsonFile)
+
+  // 构建请求头
+  const headers: Record<string, string> = {}
+  
+  if (options.pinataJWT) {
+    headers['Authorization'] = `Bearer ${options.pinataJWT}`
+    console.log('使用 JWT Token 认证')
+  } else if (options.pinataKey && options.pinataSecret) {
+    headers['pinata_api_key'] = options.pinataKey
+    headers['pinata_secret_api_key'] = options.pinataSecret
+    console.log('使用 API Key + Secret 认证')
+  } else {
+    throw new Error('需要提供 Pinata JWT Token 或 API Key + Secret')
+  }
+
+  try {
+    console.log('发送请求到 Pinata API...')
+    const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    console.log('响应状态:', response.status, response.statusText)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ Pinata API 错误响应:', errorText)
+      throw new Error(`上传失败: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    console.log('✅ Pinata API 响应:', data)
+    
+    const cid = data.IpfsHash
+    const url = `https://gateway.pinata.cloud/ipfs/${cid}`
+
+    console.log('✅ JSON 上传成功!')
+    console.log('CID:', cid)
+    console.log('URL:', url)
+
+    return { cid, url }
+  } catch (error) {
+    console.error('❌ Pinata JSON 上传错误:', error)
+    if (error instanceof Error) {
+      console.error('错误消息:', error.message)
+      console.error('错误堆栈:', error.stack)
+    }
+    throw error
+  }
+}
+
+/**
  * 常用的 IPFS 网关列表
  */
 export const IPFS_GATEWAYS = {
