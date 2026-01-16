@@ -7,14 +7,28 @@ import { createRoot } from 'react-dom/client'
 //创建React应用的根节点
 import { BrowserRouter } from 'react-router-dom'
 //导入路由组件
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { WagmiProvider } from 'wagmi'
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
+import { config } from './config/rainbowkit'
+import '@rainbow-me/rainbowkit/styles.css'
 import './index.css'
 //导入全局样式
 import App from './App.tsx'
 //导入APP组件
+
+const queryClient = new QueryClient()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   </StrictMode>,
 )

@@ -22,6 +22,11 @@ function HomePage() {
           <h2>商品列表</h2>
           <p>浏览和购买商品</p>
         </Link>
+        
+        <Link to="/deploy" className="nav-button deploy-nav">
+          <h2>部署合约</h2>
+          <p>部署 NFT 智能合约</p>
+        </Link>
       </div>
     </div>
   )

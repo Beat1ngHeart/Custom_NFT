@@ -173,4 +173,129 @@
   color: #646cff;
 }
 
+.detail-info a {
+  color: #646cff;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.detail-info a:hover {
+  text-decoration: underline;
+}
+
+/* 铸造按钮样式 */
+.mint-button {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.25s;
+  flex: 1;
+  min-width: 120px;
+}
+
+.mint-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.mint-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.detail-mint-button {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  margin-top: 1rem;
+}
+
+.mint-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mint-hint {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #888;
+  text-align: center;
+}
+
+.metadata-info {
+  font-size: 0.85rem;
+  color: #4caf50;
+  margin: 0.5rem 0;
+  font-family: monospace;
+}
+
+.product-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.product-actions .mint-button {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* 添加到钱包按钮样式 */
+.add-to-wallet-button {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.25s;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.add-to-wallet-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.add-to-wallet-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-to-wallet-button.detail-button {
+  margin-top: 1rem;
+}
+
+.add-to-wallet-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 8px;
+}
+
+.token-id-info {
+  margin: 0 0 0.5rem 0;
+  color: #4caf50;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.wallet-hint {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.85rem;
+  color: #888;
+  line-height: 1.5;
+}
+
 

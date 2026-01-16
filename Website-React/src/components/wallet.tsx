@@ -1,77 +1,128 @@
-import { useState,useEffect } from "react";
-import './wallet.css';
+import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useAccount, useDisconnect } from 'wagmi'
+import { useEffect } from 'react'
+import './wallet.css'
 
-function Wallet() 
-{
-    const [walletAddress, setWalletAddress] = useState<string>('');
-    const [privateKey, setPrivateKey] = useState<string>('');
-    const [showWalletModal, setShowWalletModal] = useState<boolean>(false);
+function Wallet() {
+  const { address, isConnected } = useAccount()
+  const { disconnect } = useDisconnect()
 
-    useEffect(() => 
-    {
-        const savedWallet = localStorage.getItem('walletAddress')
-        if (savedWallet){
-            setWalletAddress(savedWallet)
-        }
-    },[])
-
-    const handleOpenWallet = () => 
-    {
-        setShowWalletModal(true);
+  // 当钱包连接时，保存地址到 localStorage
+  useEffect(() => {
+    if (isConnected && address) {
+      localStorage.setItem('walletAddress', address)
+    } else {
+      localStorage.removeItem('walletAddress')
     }
+  }, [isConnected, address])
 
-    const handleCloseWallet = () => 
-    {
-        setShowWalletModal(false);
-        setPrivateKey('');
-    }
+  return (
+    <div className="wallet-container">
+      <ConnectButton.Custom>
+        {({
+          account,
+          chain,
+          openAccountModal,
+          openChainModal,
+          openConnectModal,
+          authenticationStatus,
+          mounted,
+        }) => {
+          // 注意：如果您的应用使用 SSR，您可能需要使用 mounted 状态
+          const ready = mounted && authenticationStatus !== 'loading'
+          const connected =
+            ready &&
+            account &&
+            chain &&
+            (!authenticationStatus ||
+              authenticationStatus === 'authenticated')
 
-    const handleBindWallet = () => 
-    {
-        if(!privateKey.trim()){
-            alert('请输入私钥');
-            return
-        }
-        const address = privateKey
-        
-        setWalletAddress(address);
-        localStorage.setItem('walletAddress',address);
-        localStorage.setItem('privateKey',privateKey);
+          return (
+            <div
+              {...(!ready && {
+                'aria-hidden': true,
+                style: {
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                },
+              })}
+            >
+              {(() => {
+                if (!connected) {
+                  return (
+                    <button
+                      onClick={openConnectModal}
+                      type="button"
+                      className="wallet-button connect-button"
+                    >
+                      连接钱包
+                    </button>
+                  )
+                }
 
-        alert('钱包绑定成功！');
-        handleCloseWallet();
-    }
-    
-    return (
-        <div>
-            <button onClick={handleOpenWallet} className="wallet-button">
-                {walletAddress ? `钱包: ${walletAddress}` : '绑定钱包'}
-            </button>
+                if (chain.unsupported) {
+                  return (
+                    <button
+                      onClick={openChainModal}
+                      type="button"
+                      className="wallet-button error-button"
+                    >
+                      错误的网络
+                    </button>
+                  )
+                }
 
-            {showWalletModal && (
-                <div className="modal-overlay" onClick={handleCloseWallet}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <button className="close-button" onClick={handleCloseWallet}>×</button>
-                        <h3>绑定钱包</h3>
-                        <div className="wallet-form">
-                            <label>私钥:
-                                <input
-                                    type="password"
-                                    value={privateKey}
-                                    onChange={(e) => setPrivateKey(e.target.value)}
-                                    placeholder="请输入私钥"
-                                    className="wallet-input"
-                                />
-                            </label>
-                            <div className="wallet-actions">
-                                <button onClick={handleBindWallet} className="bind-button">绑定钱包</button>
-                                <button onClick={handleCloseWallet} className="cancel-button">取消</button>
-                            </div>
+                return (
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      onClick={openChainModal}
+                      style={{ display: 'flex', alignItems: 'center' }}
+                      type="button"
+                      className="wallet-button chain-button"
+                    >
+                      {chain.hasIcon && (
+                        <div
+                          style={{
+                            background: chain.iconBackground,
+                            width: 12,
+                            height: 12,
+                            borderRadius: 999,
+                            overflow: 'hidden',
+                            marginRight: 4,
+                          }}
+                        >
+                          {chain.iconUrl && (
+                            <img
+                              alt={chain.name ?? 'Chain icon'}
+                              src={chain.iconUrl}
+                              style={{ width: 12, height: 12 }}
+                            />
+                          )}
                         </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    )
+                      )}
+                      {chain.name}
+                    </button>
+
+                    <button
+                      onClick={openAccountModal}
+                      type="button"
+                      className="wallet-button account-button"
+                    >
+                      {account.displayName}
+                      {account.displayBalance
+                        ? ` (${account.displayBalance})`
+                        : ''}
+                    </button>
+                  </div>
+                )
+              })()}
+            </div>
+          )
+        }}
+      </ConnectButton.Custom>
+    </div>
+  )
 }
-export default Wallet;
+
+export default Wallet
