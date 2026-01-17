@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 //在组件渲染后执行代码
 //监听数据变化并执行相应操作
 //清理资源（如取消订阅、清除定时器等）
+import { useAccount } from 'wagmi'
 import './ImageUploader.css'
 import { uploadImageToIPFS, uploadJSONToPinata, getIPFSImageUrl, IPFS_GATEWAYS } from '../utils/ipfs'
 
@@ -31,12 +32,14 @@ interface Product
   ipfsCid?: string  // IPFS 内容标识符（可选）
   metadataCid?: string  // NFT metadata JSON 的 CID
   metadataUrl?: string  // NFT metadata JSON 的 URL
-  price: number
+  price: number  // 价格（ETH）
+  seller: string  // 上架人钱包地址
   timestamp: number
 }
 
 function ImageUploader() 
 {
+  const { address, isConnected } = useAccount()
   const [image, setImage] = useState<string>('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [price, setPrice] = useState<string>('')
@@ -178,9 +181,14 @@ function ImageUploader()
       return
     }
 
+    if (!isConnected || !address) {
+      alert('请先连接钱包才能上架商品')
+      return
+    }
+
     const priceNum = parseFloat(price)
     if (isNaN(priceNum) || priceNum <= 0) {
-      alert('请输入有效的价格')
+      alert('请输入有效的价格（ETH）')
       return
     }
 
@@ -255,6 +263,7 @@ function ImageUploader()
       metadataCid: metadataCid,
       metadataUrl: metadataUrl,
       price: priceNum,
+      seller: address,
       timestamp: Date.now()
     }
 
@@ -444,17 +453,20 @@ function ImageUploader()
       {/* 价格输入 */}
       <div className="price-section">
         <label>
-          价格：
+          价格（ETH）：
           <input
             type="number"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            placeholder="请输入价格"
+            placeholder="请输入价格（ETH）"
             min="0"
-            step="0.01"
-            disabled={uploading || uploadingMetadata}
+            step="0.001"
+            disabled={uploading || uploadingMetadata || !isConnected}
           />
         </label>
+        {!isConnected && (
+          <p className="wallet-hint">⚠️ 请先连接钱包才能上架商品</p>
+        )}
       </div>
 
       {/* 保存按钮 */}

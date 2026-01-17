@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useWriteContract, useWaitForTransactionReceipt, useAccount, usePublicClient } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { formatTokenURI, CONTRACT_ADDRESS, NFT_ABI, isValidContractAddress, type Address } from '../utils/contract'
 import { addNFTToWallet, checkNetwork, switchNetwork } from '../utils/wallet'
+import { parseEther } from 'viem'
 import './ProductList.css'
 
 // 定义商品数据类型
@@ -11,7 +12,8 @@ interface Product {
   ipfsCid?: string
   metadataCid?: string
   metadataUrl?: string
-  price: number
+  price: number  // 价格（ETH）
+  seller: string  // 上架人钱包地址
   timestamp: number
 }
 
@@ -30,11 +32,13 @@ function ProductList() {
 
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
   const { writeContract, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: hash || undefined,
   })
   const [mintedTokenIds, setMintedTokenIds] = useState<Record<string, string>>({}) // 存储已铸造的 Token ID
+  const [purchasingProductId, setPurchasingProductId] = useState<string | null>(null) // 正在购买的商品 ID
 
   // 从 localStorage 读取商品数据
   useEffect(() => {
@@ -70,27 +74,78 @@ function ProductList() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [mintingProductId, setMintingProductId] = useState<string | null>(null)
 
-  // 购买商品
-  const handlePurchase = (product: Product) => {
-    if (window.confirm(`确认购买此商品？价格：¥${product.price.toFixed(2)}`)) {
-      // 从localStorage中删除已购买商品
-      // 直接从 localStorage 读取最新数据，避免闭包问题
-      const savedProducts = localStorage.getItem('products')
-      if (savedProducts) {
-        const currentProducts: Product[] = JSON.parse(savedProducts)
-        const updatedProducts = currentProducts.filter(p => p.id !== product.id)
-        
-        // 更新 localStorage
-        localStorage.setItem('products', JSON.stringify(updatedProducts))
-        
-        // 更新状态
-        setProducts(updatedProducts)
-        
-        // 触发自定义事件，通知其他组件更新
-        window.dispatchEvent(new Event('productsUpdated'))
-        
-        alert('购买成功！')
+  // 购买商品（支付 ETH 并自动铸造 NFT）
+  const handlePurchase = async (product: Product) => {
+    if (!isConnected) {
+      alert('请先连接钱包')
+      return
+    }
+
+    if (!product.metadataCid) {
+      alert('该商品没有 metadata CID，无法购买')
+      return
+    }
+
+    if (!isValidContractAddress(CONTRACT_ADDRESS)) {
+      alert('合约地址未配置或无效。请在 .env.local 中设置 VITE_NFT_CONTRACT_ADDRESS')
+      return
+    }
+
+    if (!product.seller) {
+      alert('商品信息不完整，缺少卖家地址')
+      return
+    }
+
+    if (address?.toLowerCase() === product.seller.toLowerCase()) {
+      alert('不能购买自己上架的商品')
+      return
+    }
+
+    if (!window.confirm(`确认购买此商品？\n价格：${product.price} ETH\n将支付给卖家：${product.seller.substring(0, 6)}...${product.seller.substring(38)}`)) {
+      return
+    }
+
+    try {
+      setPurchasingProductId(product.id)
+      
+      // 验证卖家地址格式
+      if (!product.seller || !product.seller.startsWith('0x') || product.seller.length !== 42) {
+        throw new Error(`卖家地址格式无效: ${product.seller}`)
       }
+      
+      // 验证价格
+      if (!product.price || product.price <= 0) {
+        throw new Error(`价格无效: ${product.price} ETH`)
+      }
+      
+      const tokenURI = formatTokenURI(product.metadataCid)
+      const priceInWei = parseEther(product.price.toString())
+      
+      if (!CONTRACT_ADDRESS) {
+        throw new Error('合约地址未配置')
+      }
+      
+      console.log('购买参数:', {
+        contractAddress: CONTRACT_ADDRESS,
+        tokenURI,
+        seller: product.seller,
+        price: product.price,
+        priceInWei: priceInWei.toString(),
+      })
+      
+      // 调用 purchase_and_mint 函数，支付 ETH 并铸造 NFT
+      writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: NFT_ABI,
+        functionName: 'purchase_and_mint',
+        args: [tokenURI, product.seller as Address],
+        value: priceInWei,
+      })
+    } catch (error: any) {
+      console.error('购买失败:', error)
+      const errorMessage = error.message || error.reason || '未知错误'
+      alert(`购买失败: ${errorMessage}\n\n请检查：\n1. 卖家地址是否正确\n2. 价格是否有效\n3. 钱包余额是否充足\n4. 合约是否已重新部署`)
+      setPurchasingProductId(null)
     }
   }
 
@@ -146,10 +201,11 @@ function ProductList() {
     }
   }
 
-  // 监听交易状态，铸造成功后获取 Token ID
+  // 监听交易状态，购买/铸造成功后获取 Token ID
   useEffect(() => {
     const getTokenId = async () => {
-      if (isConfirmed && mintingProductId && hash && publicClient && CONTRACT_ADDRESS) {
+      const productId = purchasingProductId || mintingProductId
+      if (isConfirmed && productId && hash && publicClient && CONTRACT_ADDRESS) {
         try {
           // 从交易收据中获取 Token ID
           const receipt = await publicClient.getTransactionReceipt({ hash })
@@ -163,26 +219,57 @@ function ProductList() {
           
           if (transferEvent && transferEvent.topics[3]) {
             const tokenId = BigInt(transferEvent.topics[3]).toString()
-            setMintedTokenIds(prev => ({ ...prev, [mintingProductId]: tokenId }))
-            alert(`✅ NFT 铸造成功！\nToken ID: ${tokenId}\n\n点击"添加到钱包"按钮将 NFT 添加到你的钱包`)
+            setMintedTokenIds(prev => ({ ...prev, [productId]: tokenId }))
+            
+            if (purchasingProductId) {
+              // 购买成功
+              alert(`✅ 购买成功！NFT 已铸造！\nToken ID: ${tokenId}\n\n点击"添加到钱包"按钮将 NFT 添加到你的钱包`)
+              
+              // 从商品列表中移除已购买的商品
+              const savedProducts = localStorage.getItem('products')
+              if (savedProducts) {
+                const currentProducts: Product[] = JSON.parse(savedProducts)
+                const updatedProducts = currentProducts.filter(p => p.id !== productId)
+                localStorage.setItem('products', JSON.stringify(updatedProducts))
+                setProducts(updatedProducts)
+                window.dispatchEvent(new Event('productsUpdated'))
+              }
+            } else {
+              // 铸造成功
+              alert(`✅ NFT 铸造成功！\nToken ID: ${tokenId}\n\n点击"添加到钱包"按钮将 NFT 添加到你的钱包`)
+            }
           } else {
-            alert('✅ NFT 铸造成功！\n\n注意：无法自动获取 Token ID，请手动查看交易详情')
+            if (purchasingProductId) {
+              alert('✅ 购买成功！\n\n注意：无法自动获取 Token ID，请手动查看交易详情')
+            } else {
+              alert('✅ NFT 铸造成功！\n\n注意：无法自动获取 Token ID，请手动查看交易详情')
+            }
           }
         } catch (error) {
           console.error('获取 Token ID 失败:', error)
-          alert('✅ NFT 铸造成功！\n\n注意：无法自动获取 Token ID，请手动查看交易详情')
+          if (purchasingProductId) {
+            alert('✅ 购买成功！\n\n注意：无法自动获取 Token ID，请手动查看交易详情')
+          } else {
+            alert('✅ NFT 铸造成功！\n\n注意：无法自动获取 Token ID，请手动查看交易详情')
+          }
         }
+        setPurchasingProductId(null)
         setMintingProductId(null)
       }
     }
     
     getTokenId()
     
-    if (error && mintingProductId) {
-      alert(`❌ 铸造失败: ${error.message}`)
+    if (error && (purchasingProductId || mintingProductId)) {
+      if (purchasingProductId) {
+        alert(`❌ 购买失败: ${error.message}`)
+      } else {
+        alert(`❌ 铸造失败: ${error.message}`)
+      }
+      setPurchasingProductId(null)
       setMintingProductId(null)
     }
-  }, [isConfirmed, error, mintingProductId, hash, publicClient])
+  }, [isConfirmed, error, purchasingProductId, mintingProductId, hash, publicClient])
 
   // 添加 NFT 到钱包
   const handleAddToWallet = async (product: Product) => {
@@ -198,14 +285,14 @@ function ProductList() {
     }
 
     try {
-      // 检查网络（Tenderly 测试网 Chain ID: 623352640）
-      const isCorrectNetwork = await checkNetwork(623352640)
+      // 检查网络（Anvil 本地网络 Chain ID: 31337）
+      const isCorrectNetwork = await checkNetwork(31337)
       if (!isCorrectNetwork) {
         const shouldSwitch = window.confirm(
-          '当前网络不匹配。\n\n合约部署在 Tenderly 测试网 (Chain ID: 623352640)\n\n是否切换到正确的网络？'
+          '当前网络不匹配。\n\n合约部署在 Anvil 本地网络 (Chain ID: 31337)\n\n是否切换到正确的网络？'
         )
         if (shouldSwitch) {
-          await switchNetwork(623352640, 'Tenderly Testnet')
+          await switchNetwork(31337, 'Anvil Local')
         } else {
           return
         }
@@ -220,7 +307,7 @@ function ProductList() {
       alert('✅ NFT 已成功添加到钱包！')
     } catch (error: any) {
       console.error('添加 NFT 到钱包失败:', error)
-      alert(`❌ 添加失败: ${error.message || '未知错误'}\n\n提示：\n1. 确保钱包已连接\n2. 确保网络正确（Tenderly 测试网）\n3. 确保 NFT 已成功铸造`)
+      alert(`❌ 添加失败: ${error.message || '未知错误'}\n\n提示：\n1. 确保钱包已连接\n2. 确保网络正确（Anvil 本地网络，Chain ID: 31337）\n3. 确保 NFT 已成功铸造`)
     }
   }
 
@@ -235,16 +322,26 @@ function ProductList() {
             <div key={product.id} className="product-card">
               <img src={product.image} alt="商品" />
               <div className="product-info">
-                <p className="product-price">¥{product.price.toFixed(2)}</p>
+                <p className="product-price">{product.price} ETH</p>
                 {product.metadataCid && (
                   <p className="metadata-info">✅ Metadata: {product.metadataCid.substring(0, 10)}...</p>
+                )}
+                {product.seller && (
+                  <p className="seller-info">卖家: {product.seller.substring(0, 6)}...{product.seller.substring(38)}</p>
                 )}
                 <div className="product-actions">
                   <button
                     onClick={() => handlePurchase(product)}
                     className="purchase-button"
+                    disabled={!isConnected || isPending || isConfirming || purchasingProductId === product.id || address?.toLowerCase() === product.seller?.toLowerCase()}
                   >
-                    购买
+                    {purchasingProductId === product.id
+                      ? isConfirming
+                        ? '确认中...'
+                        : isPending
+                        ? '等待确认...'
+                        : '购买中...'
+                      : '购买'}
                   </button>
                   <button
                     onClick={() => handleShowDetails(product)}
@@ -293,7 +390,10 @@ function ProductList() {
             <h3>商品详情</h3>
             <img src={selectedProduct.image} alt="商品详情" className="detail-image" />
             <div className="detail-info">
-              <p><strong>价格：</strong>¥{selectedProduct.price.toFixed(2)}</p>
+              <p><strong>价格：</strong>{selectedProduct.price} ETH</p>
+              {selectedProduct.seller && (
+                <p><strong>卖家：</strong>{selectedProduct.seller}</p>
+              )}
               <p><strong>商品ID：</strong>{selectedProduct.id}</p>
               <p><strong>上架时间：</strong>{new Date(selectedProduct.timestamp).toLocaleString()}</p>
               {selectedProduct.ipfsCid && (

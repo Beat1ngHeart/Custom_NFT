@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage'
 import UploadPage from './pages/UploadPage'
 import ProductsPage from './pages/ProductsPage'
 import DeployPage from './pages/DeployPage'
+import DownloadPage from './pages/DownloadPage'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Route path="/upload" element={<UploadPage />} />
       <Route path="/products" element={<ProductsPage />} />
       <Route path="/deploy" element={<DeployPage />} />
+      <Route path="/download" element={<DownloadPage />} />
     </Routes>
   )
 }

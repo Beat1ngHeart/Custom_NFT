@@ -69,6 +69,14 @@
   color: #2196f3;
 }
 
+.deploy-nav h2 {
+  color: #ff9800;
+}
+
+.download-nav h2 {
+  color: #9c27b0;
+}
+
 .nav-button p {
   margin: 0;
   color: #888;

@@ -101,8 +101,8 @@ export async function switchNetwork(chainId: number, networkName?: string): Prom
                 symbol: 'ETH',
                 decimals: 18,
               },
-              rpcUrls: ['https://virtual.sepolia.eu.rpc.tenderly.co/4fb5e0c9-c961-48ae-ba4f-ef058cdc5450'],
-              blockExplorerUrls: ['https://dashboard.tenderly.co'],
+              rpcUrls: ['http://127.0.0.1:8545'], // Anvil 本地 RPC
+              blockExplorerUrls: ['http://127.0.0.1:8545'],
             },
           ],
         })
@@ -125,4 +125,5 @@ declare global {
     }
   }
 }
+
 

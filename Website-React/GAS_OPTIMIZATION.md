@@ -126,3 +126,4 @@ def batch_mint(uris: DynArray[String[432], 10]):
 - 测试时：使用部署脚本，自动部署+铸造
 - 生产时：分开操作，更灵活
 
+

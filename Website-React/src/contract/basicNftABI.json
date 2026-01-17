@@ -12,6 +12,22 @@
     "outputs": []
   },
   {
+    "stateMutability": "payable",
+    "type": "function",
+    "name": "purchase_and_mint",
+    "inputs": [
+      {
+        "name": "uri",
+        "type": "string"
+      },
+      {
+        "name": "seller",
+        "type": "address"
+      }
+    ],
+    "outputs": []
+  },
+  {
     "stateMutability": "view",
     "type": "function",
     "name": "tokenURI",

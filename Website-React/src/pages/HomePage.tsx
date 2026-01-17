@@ -27,6 +27,11 @@ function HomePage() {
           <h2>部署合约</h2>
           <p>部署 NFT 智能合约</p>
         </Link>
+        
+        <Link to="/download" className="nav-button download-nav">
+          <h2>我的仓库</h2>
+          <p>查看和下载你的 NFT</p>
+        </Link>
       </div>
     </div>
   )
